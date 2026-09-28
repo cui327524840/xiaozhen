@@ -1,0 +1,5 @@
+.godot/
+build/
+templates_unpacked/
+*.zip.tmp
+package/
