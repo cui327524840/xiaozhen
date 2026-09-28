@@ -72,12 +72,10 @@ jobs:
       - name: 导出 iOS 工程
         run: |
           mkdir -p build/ios
-          set +e
-          "$GODOT_BIN" --headless --path . --export-release "iOS" "build/ios/game.ipa" 2>&1 | tail -60
-          echo "（导出命令退出码 $?，只要能生成 Xcode 工程就行）"
-          set -e
+          "$GODOT_BIN" --headless --path . --export-release "iOS" "build/ios/game.ipa" 2>&1 | tail -40
           echo "=== 找到的工程 ==="
           find build -maxdepth 5 -name "*.xcodeproj" -print
+          test -n "$(find build -maxdepth 5 -name '*.xcodeproj' -print -quit)" || { echo "❌ 没有生成 Xcode 工程"; exit 1; }
 
       - name: 改成横屏（游戏是 1280×720 横屏）
         run: |
@@ -116,6 +114,7 @@ jobs:
             -derivedDataPath build/dd \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
+            DEVELOPMENT_TEAM="" \
             CODE_SIGN_IDENTITY="" \
             build
           APP=$(find build/dd/Build/Products -maxdepth 3 -name "*.app" | head -1)
