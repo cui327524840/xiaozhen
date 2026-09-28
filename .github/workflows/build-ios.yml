@@ -14,8 +14,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 解压游戏素材
-        run: unzip -q assets.zip
+      - name: 下载并解压游戏素材（Release 附件）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download assets-v1 --repo "${{ github.repository }}" --pattern assets.zip --clobber
+          unzip -q assets.zip
+          ls assets | head -5
 
       - name: 打印工具链版本
         run: |
