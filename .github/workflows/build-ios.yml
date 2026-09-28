@@ -99,6 +99,16 @@ jobs:
                   print('跳过', path, error)
           PY
 
+      - name: 上传生成的工程（排查用）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-xcode-project
+          path: |
+            build/ios/*.xcodeproj/**
+            build/ios/**/Info.plist
+          if-no-files-found: warn
+
       - name: 编译并打包 IPA
         run: |
           set -e
