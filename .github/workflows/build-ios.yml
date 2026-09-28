@@ -72,6 +72,8 @@ jobs:
       - name: 导出 iOS 工程
         run: |
           mkdir -p build/ios
+          echo "=== 导出前确认预设内容 ==="
+          grep -n "team_id\|bundle_identifier\|export_project_only" export_presets.cfg || echo "（预设里没找到这些键）"
           "$GODOT_BIN" --headless --path . --export-release "iOS" "build/ios/game.ipa" 2>&1 | tail -40
           echo "=== 找到的工程 ==="
           find build -maxdepth 5 -name "*.xcodeproj" -print
