@@ -115,12 +115,13 @@ jobs:
           PROJECT=$(find build -maxdepth 5 -name "*.xcodeproj" | head -1)
           if [ -z "$PROJECT" ]; then echo "❌ 没有生成 Xcode 工程"; exit 1; fi
           echo "工程: $PROJECT"
-          xcodebuild -project "$PROJECT" -list
-          SCHEME=$(xcodebuild -project "$PROJECT" -list -json | python3 -c "import json,sys;print(json.load(sys.stdin)['project']['schemes'][0])")
-          echo "Scheme: $SCHEME"
+          # Godot 模板自带的 scheme 指向占位 target ID，会让 xcodebuild 报「工程损坏」，先删掉
+          rm -rf "$PROJECT/xcshareddata/xcschemes"
+          TARGET=$(basename "$PROJECT" .xcodeproj)
+          echo "Target: $TARGET"
           xcodebuild \
             -project "$PROJECT" \
-            -scheme "$SCHEME" \
+            -target "$TARGET" \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build/dd \
