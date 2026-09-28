@@ -31,6 +31,15 @@ jobs:
           xcodebuild -version
           python3 --version
 
+      - name: 选择最新的 Xcode
+        run: |
+          echo "镜像里可用的 Xcode："
+          ls -d /Applications/Xcode*.app || true
+          NEWEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "选用：$NEWEST"
+          sudo xcode-select -s "$NEWEST"
+          xcodebuild -version
+
       - name: 缓存 Godot 导出模板（1.2GB，避免每次都下）
         uses: actions/cache@v4
         with:
