@@ -1,0 +1,32 @@
+; Engine configuration file.
+; Generated for "小镇家园" - a Townsmen-like medieval town builder.
+
+config_version=5
+
+[application]
+
+config/name="小镇家园"
+config/description="Townsmen 7 风格的中世纪城镇经营游戏"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+boot_splash/bg_color=Color(0.29, 0.36, 0.23, 1)
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/size/resizable=true
+window/size/mode=0
+window/size/initial_position_type=1
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.29, 0.36, 0.23, 1)
+; 让纹理同时导入 ETC2/ASTC 变体，否则 iOS（手机 GPU）用不了这些贴图
+textures/vram_compression/import_etc2_astc=true

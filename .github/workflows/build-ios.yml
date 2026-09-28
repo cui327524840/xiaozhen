@@ -14,13 +14,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 下载并解压游戏素材（Release 附件）
+      - name: 下载素材与导入缓存（Release 附件）
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download assets-v1 --repo "${{ github.repository }}" --pattern assets.zip --clobber
+          gh release download assets-v1 --repo "${{ github.repository }}" --pattern import-cache.zip --clobber
           unzip -q assets.zip
-          ls assets | head -5
+          mkdir -p .godot
+          unzip -q import-cache.zip -d .godot
+          echo "素材目录：" && ls assets | head -3
+          echo "导入缓存：" && ls .godot/imported | head -3
 
       - name: 打印工具链版本
         run: |
@@ -61,9 +65,9 @@ jobs:
           fi
           ls "$TEMPLATE_DIR" | head -20
 
-      - name: 首次导入资源
+      - name: 校验导入（已有缓存，很快）
         run: |
-          "$GODOT_BIN" --headless --path . --import 2>&1 | tail -20 || true
+          "$GODOT_BIN" --headless --path . --import 2>&1 | tail -12 || true
 
       - name: 导出 iOS 工程
         run: |
