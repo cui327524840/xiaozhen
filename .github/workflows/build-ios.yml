@@ -124,13 +124,13 @@ jobs:
             -target "$TARGET" \
             -configuration Release \
             -sdk iphoneos \
-            -derivedDataPath build/dd \
+            CONFIGURATION_BUILD_DIR="$PWD/build/app" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             DEVELOPMENT_TEAM="" \
             CODE_SIGN_IDENTITY="" \
             build
-          APP=$(find build/dd/Build/Products -maxdepth 3 -name "*.app" | head -1)
+          APP=$(find build/app -maxdepth 2 -name "*.app" | head -1)
           echo "App: $APP"
           mkdir -p package/Payload
           cp -R "$APP" package/Payload/
