@@ -1,0 +1,126 @@
+name: build-ios
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 解压游戏素材
+        run: unzip -q assets.zip
+
+      - name: 打印工具链版本
+        run: |
+          xcodebuild -version
+          python3 --version
+
+      - name: 缓存 Godot 导出模板（1.2GB，避免每次都下）
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Application Support/Godot/export_templates
+          key: godot-export-templates-4.7.2-stable
+
+      - name: 准备 Godot 与导出模板
+        run: |
+          set -e
+          VERSION=4.7.2
+          BASE="https://github.com/godotengine/godot/releases/download/${VERSION}-stable"
+          mkdir -p "$HOME/godot"
+          if [ ! -d "$HOME/godot/Godot.app" ]; then
+            echo "下载 Godot ${VERSION}（macOS 版）"
+            curl -sSL -o godot.zip "$BASE/Godot_v${VERSION}-stable_macos.universal.zip"
+            unzip -q godot.zip -d "$HOME/godot"
+          fi
+          GODOT_BIN=$(find "$HOME/godot" -type f -name Godot -path "*MacOS*" | head -1)
+          chmod +x "$GODOT_BIN"
+          xattr -dr com.apple.quarantine "$HOME/godot" || true
+          echo "GODOT_BIN=$GODOT_BIN" >> "$GITHUB_ENV"
+          echo "Godot: $GODOT_BIN"
+
+          TEMPLATE_DIR="$HOME/Library/Application Support/Godot/export_templates/${VERSION}.stable"
+          if [ ! -f "$TEMPLATE_DIR/ios.zip" ]; then
+            echo "下载导出模板（约 1.2GB）"
+            curl -sSL -o templates.tpz "$BASE/Godot_v${VERSION}-stable_export_templates.tpz"
+            rm -rf templates_unpacked
+            unzip -q templates.tpz -d templates_unpacked
+            mkdir -p "$TEMPLATE_DIR"
+            cp templates_unpacked/templates/* "$TEMPLATE_DIR/"
+          fi
+          ls "$TEMPLATE_DIR" | head -20
+
+      - name: 首次导入资源
+        run: |
+          "$GODOT_BIN" --headless --path . --import 2>&1 | tail -20 || true
+
+      - name: 导出 iOS 工程
+        run: |
+          mkdir -p build/ios
+          set +e
+          "$GODOT_BIN" --headless --path . --export-release "iOS" "build/ios/game.ipa" 2>&1 | tail -60
+          echo "（导出命令退出码 $?，只要能生成 Xcode 工程就行）"
+          set -e
+          echo "=== 找到的工程 ==="
+          find build -maxdepth 5 -name "*.xcodeproj" -print
+
+      - name: 改成横屏（游戏是 1280×720 横屏）
+        run: |
+          python3 - <<'PY'
+          import glob, plistlib
+          for path in glob.glob('build/**/Info.plist', recursive=True):
+              try:
+                  with open(path, 'rb') as handle:
+                      data = plistlib.load(handle)
+                  data['UISupportedInterfaceOrientations'] = [
+                      'UIInterfaceOrientationLandscapeLeft',
+                      'UIInterfaceOrientationLandscapeRight',
+                  ]
+                  data['UIRequiresFullScreen'] = True
+                  with open(path, 'wb') as handle:
+                      plistlib.dump(data, handle)
+                  print('已改横屏:', path)
+              except Exception as error:
+                  print('跳过', path, error)
+          PY
+
+      - name: 编译并打包 IPA
+        run: |
+          set -e
+          PROJECT=$(find build -maxdepth 5 -name "*.xcodeproj" | head -1)
+          if [ -z "$PROJECT" ]; then echo "❌ 没有生成 Xcode 工程"; exit 1; fi
+          echo "工程: $PROJECT"
+          xcodebuild -project "$PROJECT" -list
+          SCHEME=$(xcodebuild -project "$PROJECT" -list -json | python3 -c "import json,sys;print(json.load(sys.stdin)['project']['schemes'][0])")
+          echo "Scheme: $SCHEME"
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build/dd \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+          APP=$(find build/dd/Build/Products -maxdepth 3 -name "*.app" | head -1)
+          echo "App: $APP"
+          mkdir -p package/Payload
+          cp -R "$APP" package/Payload/
+          cd package
+          zip -qry ../xiaozhen-ios-unsigned.ipa Payload
+          cd ..
+          ls -la *.ipa
+
+      - name: 上传 IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: xiaozhen-ios-ipa
+          path: xiaozhen-ios-unsigned.ipa
+          if-no-files-found: error

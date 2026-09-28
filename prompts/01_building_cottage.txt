@@ -1,0 +1,8 @@
+isometric view, medieval European building, Townsmen 7 style, hand-painted cartoon asset,
+clean crisp edges, soft rounded proportions, detailed brick and timber textures,
+visible roof tiles with warm terracotta tones, small arched windows, wooden shutters,
+chimney with smoke, soft ambient occlusion, warm sunlight from upper left,
+vivid but muted palette (ochre, terracotta, warm grey, moss green),
+no photorealistic texture, no painterly blur,
+single building centered on a plain flat solid magenta background, no ground shadow beyond a small oval contact shadow,
+game asset sheet for a strategy game, high readability, consistent scale
